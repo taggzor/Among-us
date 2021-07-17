@@ -1,64 +1,67 @@
-const config = require("./botconfig.json");
 const Discord = require("discord.js");
 
-const bot = new Discord.Client({disableEveryone:true});
+const bot = new Discord.Client();
+
+let dane={};
+let lp=0;
+let suma=0;
+parseInt(suma);
+bot.on("ready", async ()=>{
+    console.log("Zalogowano");
+})
+
+function formatNumber(num) {
+    return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+  }
 
 
-var servers= {};
-let conncheck={};
+let wynik = new Discord.MessageEmbed()
+        .setColor('#0099aa')
+        .setTitle('Stan Majątkowy');
 
-bot.on("ready", async () =>{
-    console.log(`Logged in as ${bot.user.tag}!`);
-    
-});
-//bot.on("guildMemberSpeaking", async ktos =>{
-//    console.log(`Mówca ${ktos.voice.member.nickname} na ${ktos.voice.guild.name}`);
-//}); 
 
-bot.on("message" , async msg =>{
-    if(msg.member.roles.cache.some(r => r.name ==="Among Us")){
-        if(msg.content=="shh"){
-            msg.channel.send("Shhhh");
-            if (msg.member.voice.channel) {
-                let channel = msg.guild.channels.cache.get(msg.member.voice.channel.id);
-                for (const [memberID, member] of channel.members) {
-                  
-                  // if (member != message.member)
-              
-                  
-                  member.voice.setMute(true);
-                }
-              } else {
-                return;
-              }
+bot.on("message", async msg =>{
 
+    if(msg.channel.name=="spis-majątkowy"){
+        if(msg.content.startsWith("kwota ")){
+            var ilosc = msg.content.substr(6);
+            if(!isNaN(ilosc)) aktualizacja(msg, ilosc);
             
+        msg.delete();
         }
-        if(msg.content=="qq"){
-            msg.channel.send("Talk time!");
-            if (msg.member.voice.channel) {
-                let channel = msg.guild.channels.cache.get(msg.member.voice.channel.id);
-                for (const [memberID, member] of channel.members) {
-                  
-                  // if (member != message.member)
-              
-                  
-                  member.voice.setMute(false);
-                }
-              } else {
-                return;
-              }
-        }
+       if(!msg.author.bot) msg.delete();
+        
     }
-    return;
-});
+    console.log(dane);
+})
 
-
-
-
-
-
-
-
-
-bot.login(config.token);
+function aktualizacja(msg, ilosc){
+    let kwota= formatNumber(ilosc);
+    let gracz=parseInt(msg.author.id);
+    let nick=msg.author.username;
+    
+    if(!dane[gracz]){ 
+        suma+=parseInt(ilosc);
+        dane[gracz] = {
+            liczba: lp,
+            kasa: ilosc,
+            nazwa: [nick]
+            
+        };
+        lp++;
+        wynik.addField(nick, kwota+" $", false);
+    }
+    else {wynik.spliceFields(dane[gracz].liczba,1);
+        suma-=parseInt(dane[gracz].kasa);
+        suma+=parseInt(ilosc);
+        dane[gracz].kasa = ilosc;
+        wynik.addField(nick, kwota+" $", false);
+    
+    }
+    wynik.setDescription("Suma mamony: "+ formatNumber(suma)+" $");
+    msg.channel.bulkDelete(2);
+    msg.channel.send(wynik);
+        
+    }
+    
+bot.login();
